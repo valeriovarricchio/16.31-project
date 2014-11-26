@@ -38,12 +38,29 @@ classdef CarWithNTrailers
         end % TODO probably add more checks?
       end
       
-      % function traj = simulate(x0, u)
-      %   x0 is the initial state of the car
-      %   u is a ControlLaw
-      %   traj is a Trajectory with the result of the simulation
-      %   using ode45 to solve the problem
-      % end
+      function traj = simulate(Car, x0, u)
+        %   x0 is the initial state of the car
+        %   u is a ControlLaw
+        %   traj is a Trajectory with the result of the simulation
+        %   using ode45 to solve the problem
+        Car.checkState(x0);
+        [ts, xs] = ode45(@(t, x) Car.dynamics(x, u.evalAt(t)), u.ts, x0); 
+        traj = Trajectory(Car, ts', xs');
+      end    
+      
+      function xdot = dynamics(Car, x, u)
+        xdot = x*0;
+        xdot(1) = cos(x(4))*u(1);
+        xdot(2) = sin(x(4))*u(1);
+        xdot(3) = u(2);
+        xdot(4) = 1/Car.D(1)*tan(x(3))*u(1);
+        % Dynamics of the trailers
+        prod = 1;
+        for i=1:Car.N
+            xdot(i+4) = u(1)/Car.D(i+1)*sin(x(i+3)-x(i+4))*prod;
+            prod = prod*cos(x(i+3)-x(i+4));
+        end
+      end
       
       % Drawing functions
       

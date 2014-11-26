@@ -24,7 +24,7 @@ classdef TimedVector
         end
         
         if(size(val, 1)~=obj.dim)
-            error(['The specified values should have the specified dimensionality (' num2str(obj.dim) ')']);
+            error(['Values should have the specified dimension (' num2str(obj.dim) ')']);
         end
         
         if(size(val, 2)~=length(ts))
