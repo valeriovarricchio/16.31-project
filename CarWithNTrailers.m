@@ -63,11 +63,10 @@ classdef CarWithNTrailers
       end
       
       % Drawing functions
-      
       function draw(Car, x)
         % Takes a state x as input and plots the car at state x
         [Xb, Yb, Xa, Ya] = getPlotData(Car, x);
-        plot(Xb,Yb, 'black-', Xa, Ya, 'b--');
+        plot(Xb,Yb, 'black-', Xa, Ya, 'black-.');
         axis equal;
       end
       
@@ -101,9 +100,17 @@ classdef CarWithNTrailers
             Ya = [Ya nan At(2,:)+origin(2)];
             origin = origin - Car.D(i+1)*R(:,1);
         end
-        
-      end
+      end  
       
+      function p = getRearAxleMidpoint(Car, trailerIdx, x)
+          % returns the position of the rear axle midpoint of the specified
+          % trailer (truck is 1) in state x. x can be a matrix (i.e. more
+          % than one state).
+          p = x(1:2,:);
+          for i=2:trailerIdx
+            p = p-Car.D(i)*[cos(x(3+i,:)); sin(x(3+i,:))];
+          end      
+      end
       
       function [bodyPts, axisPts] = truckPoints(Car, phi)
          [bodyPts, axisPts] = trailerPoints(Car, 1, -0.5);
