@@ -66,6 +66,13 @@ classdef CarWithNTrailers
       
       function draw(Car, x)
         % Takes a state x as input and plots the car at state x
+        [Xb, Yb, Xa, Ya] = getPlotData(Car, x);
+        plot(Xb,Yb, 'black-', Xa, Ya, 'b--');
+        axis equal;
+      end
+      
+      function [Xb, Yb, Xa, Ya] = getPlotData(Car, x)
+        % Takes a state x as input and output the vector to plot
         checkState(Car, x);
         
         % Draw the truck
@@ -95,10 +102,8 @@ classdef CarWithNTrailers
             origin = origin - Car.D(i+1)*R(:,1);
         end
         
-        plot(Xb,Yb, 'black-', Xa, Ya, 'b--');
-        axis equal;
-        
       end
+      
       
       function [bodyPts, axisPts] = truckPoints(Car, phi)
          [bodyPts, axisPts] = trailerPoints(Car, 1, -0.5);
