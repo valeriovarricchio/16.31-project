@@ -1,13 +1,12 @@
 classdef CarWithNTrailers
 
 %  Class to describe a car with N trailers.
-%  A state of the car is inended as a column vector of
-%  N+4 elements, namely:
+%  A state of the car is inended as a column vector of N+4 elements:
 %
 %        /   x_0   \ 
 %       |    y_0    | 
 %       |    phi    |
-%   x = |  theta_0  |
+%   x = |  theta_0  | ,
 %       |  theta_1  |
 %       |    ...    |
 %        \ theta_N /
@@ -19,6 +18,8 @@ classdef CarWithNTrailers
    properties (SetAccess = private)
       N;
       D;
+      StateDimension;
+      InputDimension;
    end
    methods
       function Car = CarWithNTrailers(N,D)
@@ -27,12 +28,28 @@ classdef CarWithNTrailers
         % (length(D) = N+1, firts element = length of the truck)
         Car.N = N;
         Car.D = D; 
+        Car.StateDimension = N+4;
+        Car.InputDimension = 2;
       end
+      
+      function checkState(Car, x)
+        if(size(x, 1)~=Car.StateDimension || size(x, 2)~=1)
+            error('Invalid Car state');
+        end % TODO probably add more checks?
+      end
+      
+      % function traj = simulate(x0, u)
+      %   x0 is the initial state of the car
+      %   u is a ControlLaw
+      %   traj is a Trajectory with the result of the simulation
+      %   using ode45 to solve the problem
+      % end
       
       % Drawing functions
       
-      function figh = draw(Car, x)
-        % Takes a state x and a figure handle as inputs and plots the car
+      function draw(Car, x)
+        % Takes a state x as input and plots the car at state x
+        checkState(Car, x);
         
         % Draw the truck
         [truckPts, axisPts] = truckPoints(Car, x(3));
@@ -45,8 +62,7 @@ classdef CarWithNTrailers
         Ya = axisPts(2,:)+x(2);
         
         origin = x(1:2);
-        hold on;
-        
+
         % Draw the trailers
         for i=1:Car.N
             [trailerPts, axisPts]= trailerPoints(Car, i+1);
@@ -62,9 +78,7 @@ classdef CarWithNTrailers
             origin = origin - Car.D(i+1)*R(:,1);
         end
         
-        figh = plot(Xb,Yb, 'black-');
-        hold on;
-        plot(Xa, Ya, 'b--');
+        plot(Xb,Yb, 'black-', Xa, Ya, 'b--');
         axis equal;
         
       end
@@ -81,7 +95,7 @@ classdef CarWithNTrailers
          xw = Wr(1,:);
          yw = Wr(2,:);
          X = [X nan xw+L nan xw+L];
-         Y = [Y nan yw+1.2*0.7/2 nan yw-1.2*0.7/2]; % TODO remove hardcoded
+         Y = [Y nan yw+1.2*0.7/2 nan yw-1.2*0.7/2]; % TODO remove hardcoded (these should agree with the ones in trailerPoints)
 
          bodyPts = [X;Y];
          axisPts(1,:) = axisPts(1,:)+Car.D(1);
