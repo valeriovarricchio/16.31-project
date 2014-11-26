@@ -1,4 +1,21 @@
 classdef CarWithNTrailers
+
+%  Class to describe a car with N trailers.
+%  A state of the car is inended as a column vector of
+%  N+4 elements, namely:
+%
+%        /   x_0   \ 
+%       |    y_0    | 
+%       |    phi    |
+%   x = |  theta_0  |
+%       |  theta_1  |
+%       |    ...    |
+%        \ theta_N /
+%
+%  with x0, y0 coords of the truck rear axle midpoint
+%  phi steering angle
+%  theta_i yaw of ith trailer (i=0 means truck)
+
    properties (SetAccess = private)
       N;
       D;
@@ -12,8 +29,8 @@ classdef CarWithNTrailers
         Car.D = D; 
       end
       
-      
       % Drawing functions
+      
       function figh = draw(Car, x)
         % Takes a state x and a figure handle as inputs and plots the car
         
