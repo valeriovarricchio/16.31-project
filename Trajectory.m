@@ -45,7 +45,7 @@ classdef Trajectory < TimedVector
           ti=1;
           for t=traj.ts
             t0 = tic;
-            set(gca,'NextPlot','replacechildren') ;
+            set(gca,'NextPlot','replacechildren');
             x = traj.evalAt(t);
             traj.Car.draw(x);
             hold on;
