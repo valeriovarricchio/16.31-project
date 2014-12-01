@@ -1,10 +1,8 @@
-function [traj, u] = steer_derivatives_1(yi, yf, T)
-    % To try it...
-    % steer_derivatives_1([0 1 0 0 3 0 0 0]', [10 1 0 0 -3 0 0 0]', 10)
+function [traj, u] = steer_1(xi, xf, T)
     
     [C, F] = getCarAndF();
-    %yi = getDerivatives(F, xi)
-    %yf = getDerivatives(F, xf)
+    yi = getFlatOutputDerivatives(F, xi);
+    yf = getFlatOutputDerivatives(F, xf);
     
     [as, bs] = findPolynomials(yi, yf, T);
     
@@ -38,8 +36,8 @@ function [as, bs] = findPolynomials(yi, yf, T)
     bs = flipud(bs);
 end
 
-function y = getDerivatives(F, xdes)
-    F0 = @(in) F(in) -xdes;
+function y = getFlatOutputDerivatives(F, xdes)
+    F0 = @(in) F(in)-xdes;
     y = fsolve(F0, 10*(rand(8,1)-.5));
 end
 
