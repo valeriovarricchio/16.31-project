@@ -1,8 +1,12 @@
 syms s
 %y = [cos(s); sin(s)]; % Circle
 %y = [s; sin(s)]; % Sinusoid
-y = [3*cos(s); sin(s)]; % Ellipse
+%y = [3*cos(s); sin(s)]; % Ellipse
 %y = 0.4*[16*sin(s)^3; 13*cos(s)-5*cos(2*s)-2*cos(3*s)-cos(4*s)]; % Heart
+R=5; r=3; d=5;
+y = [(R-r)*cos(s)+d*cos((R-r)/r*s); (R-r)*sin(s)-d*sin((R-r)/r*s)]; % star (hypotrochoid)
+
+
 
 D = [1 2 3]; % lengths of truck and trailers
 N = length(D)-1;

@@ -17,7 +17,7 @@ u = [u1;u2];
 
 % Old code testing a dummy trajectory
 % nT = size(ts, 2);
-% qs = bsxfun(@times,q1,linspace(1,0,nT)) 
+% qs = bsxfun(@times,q_init,linspace(1,0,nT)) 
 %      + bsxfun(@times,q2,linspace(0,1,nT));
 % dummyTraj = Trajectory(C, ts, qs);
 % dummyTraj.playback();

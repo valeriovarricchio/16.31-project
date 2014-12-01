@@ -1,8 +1,10 @@
 syms s
 %p1 = [cos(s); sin(s)]; % Circle
 %p1 = [s; sin(s)]; % Sinusoid
-p1 = [3*cos(s); sin(s)]; % Ellipse
+%p1 = [3*cos(s); sin(s)]; % Ellipse
 %p1 = 0.2*[16*sin(s)^3; 13*cos(s)-5*cos(2*s)-2*cos(3*s)-cos(4*s)]; % Heart
+R=5; r=3; d=5;
+p1 = [(R-r)*cos(s)+d*cos((R-r)/r*s); (R-r)*sin(s)-d*sin((R-r)/r*s)]; % star (hypotrochoid)
 
 d0 = 1;
 d1 = 2;
@@ -37,7 +39,7 @@ fu = matlabFunction(u);
 
 %% 
 % simulate
-ss = linspace(0,10, 100);
+ss = linspace(0,20, 1000);
 
 % The following are superslow (and not guaranteed to work as expected)
 x_nom = fx(ss);
