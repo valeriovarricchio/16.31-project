@@ -20,6 +20,10 @@ classdef CarWithNTrailers
       D;
       StateDimension;
       InputDimension;
+      
+      % F is a function handle to a function that backs up state from 
+      % flat output and its derivatives, i.e. x = F(y, y', y'', ... ) 
+      F;
    end
    methods
       function Car = CarWithNTrailers(N,D)
@@ -30,7 +34,123 @@ classdef CarWithNTrailers
         Car.D = D; 
         Car.StateDimension = N+4;
         Car.InputDimension = 2;
+        
+        % Construct function F
+        Car.F = constructF(Car);
       end
+      
+      function F = constructF(Car)
+          
+         disp('Building the flatness map...');
+          
+         syms t x(t) y(t);
+
+         t = cell(1, Car.N+1); % Tangent vectors
+         theta = cell(1, Car.N+1); % Headings
+         p = cell(1, Car.N+1); % Trajectories
+
+         p{Car.N+1} = [x;y];
+         for i=Car.N+1:-1:1
+             t{i} = diff(p{i})/sum(diff(p{i}).^2)^.5;
+             theta{i} = angle([1 1i]*t{i});
+             if(i>1)
+                p{i-1} = p{i}+t{i}*Car.D(i);
+             end
+         end
+
+         u1 = sum(diff(p{1}).^2)^.5;
+         theta0dot = diff(theta{1});
+         phi = atan(Car.D(1)*theta0dot/u1);
+
+         % We have backed up the state and control vectors!
+         q = [p{1}; phi; theta{1};];
+         for i=2:Car.N+1
+             q = [q; theta{i}];
+         end
+         
+         %u = [u1; diff(phi)];
+         % derivatives 
+         xd = sym('x', [Car.N+3 1]);
+         yd = sym('y', [Car.N+3 1]);
+
+         f = q(0);
+         
+         for i=Car.N+3:-1:1
+             string = [repmat('D(', [1, i-1]) 'x' repmat(')', [1, i-1]) '(0)'];
+             f = subs(f, string, xd(i));
+             string = [repmat('D(', [1, i-1]) 'y' repmat(')', [1, i-1]) '(0)'];
+             f = subs(f, string, yd(i));
+         end
+
+         % F takes the derivatives of the flat output as inputs
+         % and outputs the corresponding state
+         F = matlabFunction(f, 'vars', {[xd; yd]});
+      end
+
+      function y = getFlatOutputDerivatives(Car, xdes)
+        F0 = @(in) Car.F(in)-xdes;
+        y = fsolve(F0, rand((Car.N+3)*2,1)-.5);
+      end
+      
+     function traj = steer(Car, xi, xf, T)
+        yi = Car.getFlatOutputDerivatives(xi);
+        yf = Car.getFlatOutputDerivatives(xf);
+
+        [as, bs] = Car.findPolynomials(yi, yf, T);
+
+        %y = [poly2sym(as, 't'); poly2sym(bs, 't')];
+        
+        fod = zeros(2*(Car.N+3), 2*(Car.N+3));
+        fod([1;Car.N+4], :) = [as'; bs'];
+        
+        for i=2:Car.N+3
+           fod(i, i:end) = polyder(fod(i-1,:));
+           fod(i+Car.N+3, i:end) = polyder(fod(i+Car.N+2,:));
+        end
+        
+        %[traj, u] = assignFlatOutputTraj(Car, y, T); takes forever
+        ts = linspace(0, T, 1000);
+        
+        yds = fod*bsxfun(@power, ts, flipud((0:2*(Car.N+3)-1)'));
+        
+        xs = [];
+        for i=1:size(yds, 2)
+            xs = [xs Car.F(yds(:, i))];
+        end
+        
+        traj = Trajectory(Car, ts, xs);
+        traj.playback(1:(Car.N+1));
+        
+     end
+
+     function [as, bs] = findPolynomials(Car, yi, yf, T)
+        % Takes the desired initial and final flat output values and derivatives
+        % and returns polynomials that satisfy the provided boundary conditions
+        % yi and yf variables in yi and yf are arranged as follows
+        x0 = yi(1:Car.N+3);
+        y0 = yi(Car.N+4:end);
+
+        xT = yf(1:Car.N+3);
+        yT = yf(Car.N+4:end); 
+
+        M0 = spdiags(factorial(0:Car.N+2)', 0, Car.N+3, 2*(Car.N+3));
+        
+        v = T.^(0:2*(Car.N+3)-1); % first row
+        MT = v;
+        
+        for i=1:Car.N+2
+            v = v(2:end)/T;
+            v = v.*(1:size(v, 2));
+            MT = [MT; zeros(1, i) v];
+        end
+                
+        as = [M0; MT]\[x0; xT];
+        bs = [M0; MT]\[y0; yT];
+
+        as = flipud(as);
+        bs = flipud(bs);
+      end
+      
       
       function checkState(Car, x)
         if(size(x, 1)~=Car.StateDimension || size(x, 2)~=1)
@@ -57,8 +177,8 @@ classdef CarWithNTrailers
         % Dynamics of the trailers
         prod = 1;
         for i=1:Car.N
-            xdot(i+4) = u(1)/Car.D(i+1)*sin(x(i+3)-x(i+4))*prod;
-            prod = prod*cos(x(i+3)-x(i+4));
+           xdot(i+4) = u(1)/Car.D(i+1)*sin(x(i+3)-x(i+4))*prod;
+           prod = prod*cos(x(i+3)-x(i+4));
         end
       end
       
@@ -88,17 +208,17 @@ classdef CarWithNTrailers
 
         % Draw the trailers
         for i=1:Car.N
-            [trailerPts, axisPts]= trailerPoints(Car, i+1);
-            % Rotate trailer
-            theta = x(i+4);
-            R = [cos(theta) -sin(theta); sin(theta) cos(theta)];
-            Tt = R*trailerPts; % trailer transformed
-            At = R*axisPts;
-            Xb = [Xb nan Tt(1,:)+origin(1)];
-            Yb = [Yb nan Tt(2,:)+origin(2)];
-            Xa = [Xa nan At(1,:)+origin(1)];
-            Ya = [Ya nan At(2,:)+origin(2)];
-            origin = origin - Car.D(i+1)*R(:,1);
+          [trailerPts, axisPts]= trailerPoints(Car, i+1);
+          % Rotate trailer
+          theta = x(i+4);
+          R = [cos(theta) -sin(theta); sin(theta) cos(theta)];
+          Tt = R*trailerPts; % trailer transformed
+          At = R*axisPts;
+          Xb = [Xb nan Tt(1,:)+origin(1)];
+          Yb = [Yb nan Tt(2,:)+origin(2)];
+          Xa = [Xa nan At(1,:)+origin(1)];
+          Ya = [Ya nan At(2,:)+origin(2)];
+          origin = origin - Car.D(i+1)*R(:,1);
         end
       end  
       
@@ -164,5 +284,6 @@ classdef CarWithNTrailers
         X = [-.5 -.5 .5 .5 -.5]*wr;
         Y = [-.5 .5 .5 -.5 -.5]*ww;
       end
+      
    end 
 end
