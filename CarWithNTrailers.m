@@ -154,7 +154,7 @@ classdef CarWithNTrailers
       
       function checkState(Car, x)
         if(size(x, 1)~=Car.StateDimension || size(x, 2)~=1)
-            error('Invalid Car state');
+            error(['Invalid Car state, should be ' num2str(Car.StateDimension) ' x 1']);
         end % TODO probably add more checks?
       end
       
@@ -183,11 +183,16 @@ classdef CarWithNTrailers
       end
       
       % Drawing functions
-      function draw(Car, x)
+      function handle = draw(Car, x, handle)
         % Takes a state x as input and plots the car at state x
         [Xb, Yb, Xa, Ya] = getPlotData(Car, x);
-        plot(Xb,Yb, 'black-', Xa, Ya, 'black-.');
-        axis equal;
+        if nargin < 3
+            handle = plot(Xb,Yb, 'black-', Xa, Ya, 'black-.');
+            axis equal;
+        else
+            set(handle(1), 'XData',  Xb, 'YData', Yb);
+            set(handle(2), 'XData',  Xa, 'YData', Ya);
+        end
       end
       
       function [Xb, Yb, Xa, Ya] = getPlotData(Car, x)

@@ -43,11 +43,15 @@ classdef Trajectory < TimedVector
           
           last_t=0;
           ti=1;
+          h_car = 0; 
+          h_traces = 0;
+          hold on
           for t=traj.ts
+            
             t0 = tic;
-            set(gca,'NextPlot','replacechildren');
+%            set(gca,'NextPlot','replacechildren');
             x = traj.evalAt(t);
-            traj.Car.draw(x);
+
             hold on;
             for i=1:length(trailerTraces)
                 ram =  traj.Car.getRearAxleMidpoint(trailerTraces(i),x);
@@ -55,8 +59,15 @@ classdef Trajectory < TimedVector
                 tracesY(i,ti) = ram(2);
             end
             axis(axisBnds)
-            plot(tracesX', tracesY', '--', 'LineWidth', 1.3);
-            plot(tracesX(:,ti), tracesY(:,ti), '*');
+            if ti==1
+                h_car = traj.Car.draw(x); 
+                h_traces = plot(tracesX',  tracesY', '--');
+            else
+                traj.Car.draw(x, h_car);
+                for i=1:length(trailerTraces)
+                    set(h_traces(i), 'XData', tracesX(i,:)', 'YData', tracesY(i,:)');
+                end
+            end
             pause(t-last_t-toc(t0));
             drawnow;
             last_t = t;
