@@ -12,12 +12,12 @@ classdef Trajectory < TimedVector
         obj.Car = Car;
       end
       
-      function playback(traj, trailerTraces, axisBnds)
+      function playback(traj, trailerTraces, axisBnds, permanence_interval)
           if(nargin<2)
             trailerTraces = [];
           end
               
-          if(nargin<3)
+          if(nargin<3 || isempty(axisBnds))
             % Try to figure out axisBnds automatically
             xmin = Inf;
             xmax = -Inf;
@@ -47,9 +47,7 @@ classdef Trajectory < TimedVector
           h_traces = 0;
           hold on
           for t=traj.ts
-            
-            t0 = tic;
-%            set(gca,'NextPlot','replacechildren');
+            t0=tic;
             x = traj.evalAt(t);
 
             hold on;
@@ -68,6 +66,15 @@ classdef Trajectory < TimedVector
                     set(h_traces(i), 'XData', tracesX(i,:)', 'YData', tracesY(i,:)');
                 end
             end
+            
+            if nargin>=4
+                if mod(ti, permanence_interval) == 0
+                    c = 1-t/traj.ts(end);
+                    car_h = traj.Car.draw(x);
+                    set(car_h, 'Color', [c, c, c]);
+                end
+            end
+            
             pause(t-last_t-toc(t0));
             drawnow;
             last_t = t;

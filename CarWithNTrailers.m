@@ -1,7 +1,7 @@
 classdef CarWithNTrailers
 
 %  Class to describe a car with N trailers.
-%  A state of the car is inended as a column vector of N+4 elements:
+%  A state of the car is intended as a column vector of N+4 elements:
 %
 %        /   x_0   \ 
 %       |    y_0    | 
@@ -13,7 +13,7 @@ classdef CarWithNTrailers
 %
 %  with x0, y0 coords of the truck rear axle midpoint
 %  phi steering angle
-%  theta_i yaw of ith trailer (i=0 means truck)
+%  theta_i yaw of i-th trailer (i=0 means truck)
 
    properties (SetAccess = private)
       N;
@@ -21,7 +21,7 @@ classdef CarWithNTrailers
       StateDimension;
       InputDimension;
       
-      % F is a function handle to a function that backs up state from 
+      % F is a function handle to a function that copmutes state from 
       % flat output and its derivatives, i.e. x = F(y, y', y'', ... ) 
       F;
    end
@@ -40,7 +40,8 @@ classdef CarWithNTrailers
       end
       
       function F = constructF(Car)
-          
+         % F takes the derivatives of the flat output as inputs
+         % and outputs the corresponding state
          disp('Building the flatness map...');
           
          syms t x(t) y(t);
@@ -82,8 +83,6 @@ classdef CarWithNTrailers
              f = subs(f, string, yd(i));
          end
 
-         % F takes the derivatives of the flat output as inputs
-         % and outputs the corresponding state
          F = matlabFunction(f, 'vars', {[xd; yd]});
       end
 
@@ -214,6 +213,7 @@ classdef CarWithNTrailers
         % Draw the trailers
         for i=1:Car.N
           [trailerPts, axisPts]= trailerPoints(Car, i+1);
+          
           % Rotate trailer
           theta = x(i+4);
           R = [cos(theta) -sin(theta); sin(theta) cos(theta)];
