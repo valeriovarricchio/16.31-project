@@ -21,7 +21,7 @@ classdef CarWithNTrailers
       StateDimension;
       InputDimension;
       
-      % F is a function handle to a function that copmutes state from 
+      % F is a function handle to a function that computes state from 
       % flat output and its derivatives, i.e. x = F(y, y', y'', ... ) 
       F;
    end
@@ -87,6 +87,8 @@ classdef CarWithNTrailers
       end
 
       function y = getFlatOutputDerivatives(Car, xdes)
+        % Finds **A** set of flat outputs + derivatives that correspond to
+        % a given state (map is not invertible)
         F0 = @(in) Car.F(in)-xdes;
         y = fsolve(F0, rand((Car.N+3)*2,1)-.5);
       end
@@ -113,7 +115,7 @@ classdef CarWithNTrailers
         
      end
       
-     function traj = steer_state2state(Car, xi, xf, T)
+     function traj = steerState2state(Car, xi, xf, T)
         yi = Car.getFlatOutputDerivatives(xi);
         yf = Car.getFlatOutputDerivatives(xf);
 
@@ -149,7 +151,6 @@ classdef CarWithNTrailers
         bs = flipud(bs);
       end
       
-      
       function checkState(Car, x)
         if(size(x, 1)~=Car.StateDimension || size(x, 2)~=1)
             error(['Invalid Car state, should be ' num2str(Car.StateDimension) ' x 1']);
@@ -172,6 +173,7 @@ classdef CarWithNTrailers
         xdot(2) = sin(x(4))*u(1);
         xdot(3) = u(2);
         xdot(4) = 1/Car.D(1)*tan(x(3))*u(1);
+        
         % Dynamics of the trailers
         prod = 1;
         for i=1:Car.N
@@ -180,7 +182,25 @@ classdef CarWithNTrailers
         end
       end
       
-      % Drawing functions
+      function [A, B] = linearizeAt(Car, x0, u0, epsilon)
+        if nargin < 4
+            epsilon = 1e-5;
+        end
+        A = zeros(Car.StateDimension);
+        for i=1:Car.StateDimension
+            sel = (1:Car.StateDimension)'==i;
+            A(:,i) = (Car.dynamics(x0+epsilon*sel, u0)-Car.dynamics(x0+epsilon*sel, u0))/2/epsilon;
+        end
+        
+        B = zeros(2, Car.StateDimension);
+        B(1,:) = (Car.dynamics(x0, u0+epsilon*[1;0])-Car.dynamics(x0, u0-epsilon*[1;0]))'/2/epsilon;
+        B(2,:) = (Car.dynamics(x0, u0+epsilon*[0;1])-Car.dynamics(x0, u0-epsilon*[0;1]))'/2/epsilon;
+      end
+      
+      
+      
+      % -------------------   Drawing functions
+      
       function handle = draw(Car, x, handle)
         % Takes a state x as input and plots the car at state x
         [Xb, Yb, Xa, Ya] = getPlotData(Car, x);

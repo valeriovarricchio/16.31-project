@@ -1,5 +1,5 @@
 classdef Trajectory < TimedVector
-
+    
     % Class to describe a zero order hold state trajectory of the car
    
    properties (SetAccess = private)
