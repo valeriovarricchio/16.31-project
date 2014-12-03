@@ -36,7 +36,7 @@ classdef CarWithNTrailers
         Car.InputDimension = 2;
         
         % Construct function F
-        Car.F = constructF(Car);
+        Car.F = constructF(Car); % Can be very slow
       end
       
       function F = constructF(Car)
@@ -91,14 +91,9 @@ classdef CarWithNTrailers
         y = fsolve(F0, rand((Car.N+3)*2,1)-.5);
       end
       
-     function traj = steer(Car, xi, xf, T)
-        yi = Car.getFlatOutputDerivatives(xi);
-        yf = Car.getFlatOutputDerivatives(xf);
-
+    function traj = steerFlatOutput(Car, yi, yf, T)
         [as, bs] = Car.findPolynomials(yi, yf, T);
 
-        %y = [poly2sym(as, 't'); poly2sym(bs, 't')];
-        
         fod = zeros(2*(Car.N+3), 2*(Car.N+3));
         fod([1;Car.N+4], :) = [as'; bs'];
         
@@ -111,14 +106,18 @@ classdef CarWithNTrailers
         ts = linspace(0, T, 1000);
         
         yds = fod*bsxfun(@power, ts, flipud((0:2*(Car.N+3)-1)'));
-        
-        xs = [];
-        for i=1:size(yds, 2)
-            xs = [xs Car.F(yds(:, i))];
-        end
-        
+
+        xs = Car.F(yds);
         traj = Trajectory(Car, ts, xs);
         traj.playback(1:(Car.N+1));
+        
+     end
+      
+     function traj = steer_state2state(Car, xi, xf, T)
+        yi = Car.getFlatOutputDerivatives(xi);
+        yf = Car.getFlatOutputDerivatives(xf);
+
+        traj = Car.steerFlatOuput(Car, yi, yf, T);
         
      end
 
