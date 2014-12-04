@@ -22,7 +22,7 @@ classdef Trajectory < TimedVector
           end
       end
       
-      function playback(traj, trailerTraces, axisBnds, permanence_interval)
+      function playback(traj, trailerTraces, axisBnds, permanenceInterval, cleanWhenDone)
           if(nargin<2)
             trailerTraces = [];
           end
@@ -46,6 +46,10 @@ classdef Trajectory < TimedVector
                 ymax = max(max(Yb), ymax);
             end
             axisBnds = [xmin-blowup xmax+blowup ymin-blowup ymax+blowup];
+          end
+          
+          if(nargin<5)
+              cleanWhenDone = 0;
           end
           
           tracesX = nan(length(trailerTraces), length(traj.ts));
@@ -77,8 +81,8 @@ classdef Trajectory < TimedVector
                 end
             end
             
-            if nargin>=4
-                if mod(ti, permanence_interval) == 0
+            if nargin>=4 && ~isempty(permanenceInterval)
+                if mod(ti, permanenceInterval) == 0
                     c = 1-t/traj.ts(end);
                     car_h = traj.Car.draw(x);
                     set(car_h, 'Color', [c, c, c]);
@@ -89,6 +93,14 @@ classdef Trajectory < TimedVector
             drawnow;
             last_t = t;
             ti=ti+1;
+          end
+          if(cleanWhenDone)
+            for i=1:length(trailerTraces)
+                set(h_traces(i), 'XData', [], 'YData', []);
+            end
+            for i=1:length(h_car)
+                set(h_car(i), 'XData', [], 'YData', []);
+            end
           end
       end
    end 

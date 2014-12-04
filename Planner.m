@@ -14,10 +14,13 @@ classdef Planner
     K
     bestDest
     bestCost
+    sampleInGoal
    end
 
    methods
       function obj = Planner(car, world)
+        obj.sampleInGoal = 0.2;
+          
         obj.car = car;
         obj.world = world;
         
@@ -36,7 +39,7 @@ classdef Planner
         obj.bestDest = 0;
 
         % 
-        obj.K = 10;
+        %obj.K = 10;
       end
 
       function obj = setStart(obj, start)
@@ -59,6 +62,19 @@ classdef Planner
       %  neighbors=knnsearch(coords',obj.tree.vertices(1:obj.tree.numVertices, :), obj.K);
       %end
 
+      function free = isCollisionFree(obj, traj)
+          N = 10; % Discrete points to check (the higher the slower)
+          free = 1;
+          for i=1:N
+            x = traj.evalAt(i*traj.ts(end)/N);
+            poly = obj.car.getCollisionPolygon(x);
+            if(~obj.world.isFreePoly(poly))
+                free = 0;
+                break;
+            end
+          end
+      end
+      
       function obj = iteration(obj)
         % One planning iteration
         newsample = obj.sample();
@@ -67,10 +83,14 @@ classdef Planner
         nearest = obj.getNearest(newsample);
         
         % Extend to nearest
-        traj = obj.car.steerFlatOutput(obj.tree.vertices(nearest, :)', newsample, 5);
-        %traj.playback(1:(obj.car.N+1), obj.world.span);
-        
-        % ~~~~~~~~~~~  TODO Check trajectory for collisions  ~~~~~~~~~~~~~~
+        traj = obj.car.steerFlatOutput(obj.tree.vertices(nearest, :)', newsample, 4); % TODO hardcoded!
+
+        ok = obj.isCollisionFree(traj);
+        %traj.playback(1:(obj.car.N+1), obj.world.span, [], ~ok);
+        if(~ok)
+            %disp('Trajectory in collision')
+            return
+        end
         
         % Add vertex
         obj.tree = obj.tree.addVertex(newsample, nearest, traj);
@@ -104,9 +124,15 @@ classdef Planner
           traj = Trajectory(obj.car, ts, val);
       end
 
-      function new_sample = sample(obj)
-        % Account for world span
-        new_sample = (rand(obj.car.flatDim, 1)-0.5).*obj.samplAmpl+obj.samplAvg;
+      function newSample = sample(obj)
+        if(rand < obj.sampleInGoal)
+            disp('Sampling in goal!');
+            delta = rand(obj.car.flatDim, 1);
+            newSample = rand*obj.goalTolerance*delta/norm(delta)+obj.goal;
+        else
+            % Account for world span
+            newSample = (rand(obj.car.flatDim, 1)-0.5).*obj.samplAmpl+obj.samplAvg;
+        end
       end
       
       function c = getTrajCost(traj)

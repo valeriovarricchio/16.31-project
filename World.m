@@ -48,6 +48,8 @@ classdef World
         obj.draw
 
         [xv, yv] = World.polygonFromUI();
+        xv = [xv xv(end)];
+        yv = [yv yv(end)];
         obj = addObstacle(obj, xv, yv);
       end
    end
