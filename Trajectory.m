@@ -70,6 +70,17 @@ classdef Trajectory < TimedVector
                 tracesX(i,ti) = ram(1);
                 tracesY(i,ti) = ram(2);
             end
+            
+            if nargin>=4 && ~isempty(permanenceInterval)
+                if mod(ti, permanenceInterval) == 0
+                    %c = 1-t/traj.ts(end); % fade in effect
+                    c = 0.9;
+                    car_h = traj.Car.draw(x);
+                    set(car_h(1:2), 'Color', [c, c, c]);
+                    uistack(h_car(1:2), 'top')
+                end
+            end
+            
             axis(axisBnds)
             if ti==1
                 h_car = traj.Car.draw(x); 
@@ -78,16 +89,10 @@ classdef Trajectory < TimedVector
                 traj.Car.draw(x, h_car);
                 for i=1:length(trailerTraces)
                     set(h_traces(i), 'XData', tracesX(i,:)', 'YData', tracesY(i,:)');
+                    uistack(h_traces(i), 'top')
                 end
             end
             
-            if nargin>=4 && ~isempty(permanenceInterval)
-                if mod(ti, permanenceInterval) == 0
-                    c = 1-t/traj.ts(end);
-                    car_h = traj.Car.draw(x);
-                    set(car_h, 'Color', [c, c, c]);
-                end
-            end
             
             pause(t-last_t-toc(t0));
             drawnow;

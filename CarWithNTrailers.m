@@ -20,6 +20,7 @@ classdef CarWithNTrailers
       D;
       StateDimension;
       InputDimension;
+      geomData;
 
       % F is a function handle to a function that computes state from
       % flat output and its derivatives, i.e. x = F(y, y', y'', ... )
@@ -36,6 +37,15 @@ classdef CarWithNTrailers
         Car.D = D;
         Car.StateDimension = N+4;
         Car.InputDimension = 2;
+        
+        % Define geometry
+        Car.geomData = struct();
+        Car.geomData.W = 1.2; % Width
+        Car.geomData.roh = 0.3; % rear overhang
+        Car.geomData.foh = 0.8; % front overhang
+        Car.geomData.truckFoh= -0.5; % truck front overhang
+        Car.geomData.fee = 0.5; % front ellipse eccentricity
+        Car.geomData.wd = Car.geomData.W*0.7;
 
         % Construct function F
         [Car.F, Car.flatDim] = constructF(Car); % Can be very slow
@@ -123,8 +133,7 @@ classdef CarWithNTrailers
         yi = Car.getFlatOutputDerivatives(xi);
         yf = Car.getFlatOutputDerivatives(xf);
 
-        traj = Car.steerFlatOuput(Car, yi, yf, T);
-
+        traj = Car.steerFlatOutput(yi, yf, T);
      end
 
      function [as, bs] = findPolynomials(Car, yi, yf, T)
@@ -202,21 +211,99 @@ classdef CarWithNTrailers
       end
 
 
+      % ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+      %                    Define Collision Geometries
+      % ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+      
+      function poly = getCollisionPolygons(Car, x, ellipseKnots)
+          if(nargin<3)
+              ellipseKnots = 4;
+          end
+        poly = cell(Car.N+1, 1);
+        origin = x(1:2)+Car.D(1)*[cos(x(4)); sin(x(4))];
+        foh = Car.geomData.truckFoh;
+        for i=1:(Car.N+1)
+          trailerPts= trailerPoints(Car, i, foh, ellipseKnots, 0);
 
-      % -------------------   Drawing functions
+          % Rotate trailer
+          theta = x(i+3);
+          R = [cos(theta) -sin(theta); sin(theta) cos(theta)];
+          Tt = R*trailerPts; % trailer transformed
+          Xb = Tt(1,:)+origin(1);
+          Yb = Tt(2,:)+origin(2);
+          poly{i} = [Xb; Yb];
+          origin = origin - Car.D(i)*R(:,1);
+          foh = [];
+        end
+      end
+      
+      function poly = getCollisionPolygon(Car, x)
+        % Making a single "stripe" polygon connecting the back points of trailers
+        % TODO The front ellipse of truck is disregarded...refine
+        polys =  getCollisionPolygons(Car, x, 2);
+        left = [];
+        right = [];
+        for i=1:length(polys)
+           left = [left polys{i}(:,[3, 2])];
+           right = [right polys{i}(:,[4, 1])];
+        end
+        right =fliplr(right);
+        poly = [left right];
+      end
+      
+      function poly = testCollisionPolygons(Car, x)
+        polys = getCollisionPolygons(Car, x);
+        hold on;
+        for i=1:length(polys)
+           fill(polys{i}(1,:), polys{i}(2,:), 'r')
+        end
+        axis equal;
+        Car.draw(x);
+      end
 
+      function poly = testCollisionPolygon(Car, x)
+        poly = getCollisionPolygon(Car, x);
+        hold on;
+        fill(poly(1,:), poly(2,:), 'r')
+        axis equal;
+        Car.draw(x);
+      end
+      
+      % ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+      %                         Drawing functions                  
+      % ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+      
       function handle = draw(Car, x, handle)
         % Takes a state x as input and plots the car at state x
         [Xb, Yb, Xa, Ya] = getPlotData(Car, x);
+        %fillHandle =[];
         if nargin < 3
+            fillHandle = Car.drawFill(x);
             handle = plot(Xb,Yb, 'black-', Xa, Ya, 'black-.');
             axis equal;
+            handle = [handle;fillHandle];
         else
             set(handle(1), 'XData',  Xb, 'YData', Yb);
             set(handle(2), 'XData',  Xa, 'YData', Ya);
+            Car.drawFill(x, handle(3:end));
         end
       end
 
+      function handle = drawFill(Car, x, handle)
+        polys = getCollisionPolygons(Car, x);
+        if nargin < 3
+            handle = zeros(length(polys), 1);
+        end
+        for i=1:length(polys)
+            if nargin < 3
+               handle(i) = fill(polys{i}(1,:), polys{i}(2,:), 'w');
+               set(handle(i),'EdgeColor','None');
+            else
+               set(handle(i), 'XData',  polys{i}(1,:), 'YData', polys{i}(2,:));
+            end
+        end
+      end
+      
       function [Xb, Yb, Xa, Ya] = getPlotData(Car, x)
         % Takes a state x as input and output the vector to plot
         checkState(Car, x);
@@ -259,9 +346,20 @@ classdef CarWithNTrailers
             p = p-Car.D(i)*[cos(x(3+i,:)); sin(x(3+i,:))];
           end
       end
-
+      
+      function p = getSkeleton(Car, x)
+          % returns the position of all the rear axle midpoints
+          % ith column is position of axle midpoint of trailer i
+          % i=1 => truck
+          p = nan(2, Car.N+1);
+          p(1,:) = x(1:2,:);
+          for i=2:(Car.N+1)
+            p(i,:) = p(i-1,:)-Car.D(i)*[cos(x(3+i,:)); sin(x(3+i,:))];
+          end
+      end
+      
       function [bodyPts, axisPts] = truckPoints(Car, phi)
-         [bodyPts, axisPts] = trailerPoints(Car, 1, -0.5);
+         [bodyPts, axisPts] = trailerPoints(Car, 1, Car.geomData.truckFoh);
          X = bodyPts(1,:)+Car.D(1);
          Y = bodyPts(2,:);
 
@@ -272,33 +370,41 @@ classdef CarWithNTrailers
          xw = Wr(1,:);
          yw = Wr(2,:);
          X = [X nan xw+L nan xw+L];
-         Y = [Y nan yw+1.2*0.7/2 nan yw-1.2*0.7/2]; % TODO remove hardcoded (these should agree with the ones in trailerPoints)
+         Y = [Y nan yw+Car.geomData.wd/2 nan yw-Car.geomData.wd/2];
 
          bodyPts = [X;Y];
          axisPts(1,:) = axisPts(1,:)+Car.D(1);
       end
 
-      function [bodyPts, axisPts] = trailerPoints(Car, i, foh)
+      function [bodyPts, axisPts] = trailerPoints(Car, i, foh, ellipseKnots, addWheels)
         % Outputs the set of Xs and Ys to draw the trailer
-        W = 1.2; % Width
+        W = Car.geomData.W; % Width
         L = Car.D(i); % Length
-        roh = 0.3; % rear overhang
-        if(nargin < 3)
-            foh = 0.8; % front overhang
+        roh = Car.geomData.roh; % rear overhang
+        if(nargin < 3 || isempty(foh))
+            foh = Car.geomData.foh;
         end
-        fee = 0.5; % front ellipse eccentricity
-        wd = W*0.7;
+        if(nargin < 4 || isempty(ellipseKnots))
+            ellipseKnots = 10;
+        end
+        if(nargin < 5)
+            addWheels = 1;
+        end
+        fee = Car.geomData.fee;
+        wd = Car.geomData.wd;
 
         % Main body
-        ang = (.5:-0.02:-.5)*pi;
+        ang = linspace(.5, -.5, ellipseKnots)*pi;%(.5:-0.02:-.5)*pi;
         X = [-L-roh -L-roh -foh+fee*W/2*(cos(ang)-1) -L-roh];
         Y = [-W/2 W/2 W/2*sin(ang) -W/2];
 
         % Wheels
-        [xw, yw] = wheelPoints(Car);
-        X = [X nan xw-L nan xw-L];
-        Y = [Y nan yw+wd/2 nan yw-wd/2];
-
+        if(addWheels)
+            [xw, yw] = wheelPoints(Car);
+            X = [X nan xw-L nan xw-L];
+            Y = [Y nan yw+wd/2 nan yw-wd/2];
+        end
+        
         bodyPts = [X;Y];
 
         % Axis
