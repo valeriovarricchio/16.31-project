@@ -8,8 +8,18 @@ classdef Trajectory < TimedVector
 
    methods
       function obj = Trajectory(Car, ts, u)
-        obj = obj@TimedVector(Car.StateDimension, ts, u);
-        obj.Car = Car;
+          n = [];
+          if(nargin<1)
+            ts = [];
+            u = [];
+            n = [];
+          else
+            n = Car.StateDimension;
+          end
+          obj = obj@TimedVector(n, ts, u);
+          if(nargin>1)
+            obj.Car = Car;
+          end
       end
       
       function playback(traj, trailerTraces, axisBnds, permanence_interval)
