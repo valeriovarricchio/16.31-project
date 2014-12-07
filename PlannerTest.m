@@ -3,7 +3,7 @@ C = CarWithNTrailers(1, [1 2]);
 %W = World([-10 10 -10 10]);
 
 warning off;
-data = load('World.mat', 'W');
+data = load('matfiles/World.mat', 'W');
 W = data.W;
 
 W.draw;

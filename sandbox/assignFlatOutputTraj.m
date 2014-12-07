@@ -59,10 +59,10 @@ function [nom_traj, u_nom] = assignFlatOutputTraj(C, y, T)
     nom_traj = Trajectory(C, ss, x_nom);
     nom_traj.playback(1:N+1);
 
+    % Actually simulate the nominal controls
+    % % (sensitive to simulation timestep)
+    % controls = ControlLaw(C, ss, u_nom);
+    % traj = C.simulate(x_nom(:,1), controls);
+    % traj.playback(1:N+1);
+    
 end
-
-% Actually simulate the nominal controls
-% % (sensitive to simulation timestep)
-% controls = ControlLaw(C, ss, u_nom);
-% traj = C.simulate(x_nom(:,1), controls);
-% traj.playback(1:N+1);

@@ -1,4 +1,4 @@
-function [C, F] = getCarAndF()
+function [C, F] = getCarAndF_1()
     syms t x(t) y(t)
 
     p1 = [x; y];

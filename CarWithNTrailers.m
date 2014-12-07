@@ -162,8 +162,8 @@ classdef CarWithNTrailers
 
         as = flipud(as);
         bs = flipud(bs);
-      end
-
+     end 
+     
       function checkState(Car, x)
         if(size(x, 1)~=Car.StateDimension || size(x, 2)~=1)
             error(['Invalid Car state, should be ' num2str(Car.StateDimension) ' x 1']);
