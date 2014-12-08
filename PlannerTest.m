@@ -25,9 +25,9 @@ for i=1:1000
     end
     P = P.iteration();
     % Get First Solution
-    if(P.bestDest~=0)
-        break
-    end
+    %if(P.bestDest~=0)
+    %    break
+    %end
 end
 
 traj = P.getPath();

@@ -22,6 +22,31 @@ classdef Trajectory < TimedVector
           end
       end
       
+      function plot(traj, trailerTraces, axisBnds, lw)
+          tracesX = nan(length(trailerTraces), length(traj.ts));
+          tracesY = nan(length(trailerTraces), length(traj.ts));
+          ti = 1;
+            for t=traj.ts
+                x = traj.evalAt(t);
+
+                hold on;
+                for i=1:length(trailerTraces)
+                    ram =  traj.Car.getRearAxleMidpoint(trailerTraces(i),x);
+                    tracesX(i,ti) = ram(1);
+                    tracesY(i,ti) = ram(2);
+                end
+                ti = ti+1;
+            end
+            p = plot(tracesX', tracesY', '--');
+            if(nargin>3)
+                set(p, 'LineWidth', lw);
+            end
+            if(nargin>2 && ~isempty(axisBnds))
+                axis(axisBnds);
+            end
+            traj.Car.draw(traj.evalAt(traj.ts(end)));
+      end
+      
       function playback(traj, trailerTraces, axisBnds, permanenceInterval, cleanWhenDone)
           if(nargin<2)
             trailerTraces = [];

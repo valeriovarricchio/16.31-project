@@ -83,11 +83,14 @@ classdef Planner
         nearest = obj.getNearest(newsample);
         
         % Extend to nearest
-        traj = obj.car.steerFlatOutput(obj.tree.vertices(nearest, :)', newsample, 4); % TODO hardcoded!
+        traj = obj.car.steerFlatOutput(obj.tree.vertices(nearest, :)', newsample, 5); % TODO hardcoded!
 
         ok = obj.isCollisionFree(traj);
         %traj.playback(1:(obj.car.N+1), obj.world.span, [], ~ok);
-        if(~ok)
+        if(ok) 
+            traj.plot(1:(obj.car.N+1));
+            drawnow;
+        else
             %disp('Trajectory in collision')
             return
         end
@@ -99,6 +102,9 @@ classdef Planner
         if norm(newsample-obj.goal)<obj.goalTolerance
             disp('Sample in goal!');
             obj.bestDest = obj.tree.numVertices;
+            sol = obj.getPath;
+            sol.plot(1:(obj.car.N+1), [], 3);
+            obj.sampleInGoal = 0;
         end
       end
       

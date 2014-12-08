@@ -102,7 +102,7 @@ classdef CarWithNTrailers
 
       function y = getFlatOutputDerivatives(Car, xdes)
         % Finds **A** set of flat outputs + derivatives that correspond to
-        % a given state (map is not invertible)
+        % a given state (the flatness map is not invertible)
         F0 = @(in) Car.F(in)-xdes;
         y = fsolve(F0, rand((Car.N+3)*2,1)-.5);
       end
