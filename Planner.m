@@ -75,7 +75,10 @@ classdef Planner
           end
       end
       
-      function obj = iteration(obj)
+      function obj = iteration(obj, vizMode)
+        if(nargin<2)
+            vizMode = 0;
+        end
         % One planning iteration
         newsample = obj.sample();
         
@@ -86,10 +89,14 @@ classdef Planner
         traj = obj.car.steerFlatOutput(obj.tree.vertices(nearest, :)', newsample, 5); % TODO hardcoded!
 
         ok = obj.isCollisionFree(traj);
-        %traj.playback(1:(obj.car.N+1), obj.world.span, [], ~ok);
+        if(vizMode==2)
+            traj.playback(1:(obj.car.N+1), obj.world.span, [], ~ok);
+        end
         if(ok) 
-            traj.plot(1:(obj.car.N+1));
-            drawnow;
+            if(vizMode==1)
+                traj.plot(1:(obj.car.N+1));
+                drawnow;
+            end
         else
             %disp('Trajectory in collision')
             return
@@ -132,7 +139,7 @@ classdef Planner
 
       function newSample = sample(obj)
         if(rand < obj.sampleInGoal)
-            disp('Sampling in goal!');
+            %disp('Sampling in goal!');
             delta = rand(obj.car.flatDim, 1);
             newSample = rand*obj.goalTolerance*delta/norm(delta)+obj.goal;
         else

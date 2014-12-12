@@ -55,7 +55,7 @@ classdef CarWithNTrailers
          % F takes the derivatives of the flat output as inputs
          % and outputs the corresponding state
          % input is in the form x, x', x'' ... , y, y', y'' ...
-         disp('Building the flatness map...');
+         disp('Building the flatness map...this may take a while');
 
          syms t x(t) y(t);
          flatDim = 2*(Car.N+3);
@@ -139,7 +139,8 @@ classdef CarWithNTrailers
      function [as, bs] = findPolynomials(Car, yi, yf, T)
         % Takes the desired initial and final flat output values and derivatives
         % and returns polynomials that satisfy the provided boundary conditions
-        % yi and yf variables in yi and yf are arranged as follows
+        % yi and yf variables in yi and yf are arranged as follows:
+        %         [x, xdot, xddot ... y, ydot, yddot ...]
         x0 = yi(1:Car.N+3);
         y0 = yi(Car.N+4:end);
 
