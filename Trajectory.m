@@ -47,7 +47,7 @@ classdef Trajectory < TimedVector
             traj.Car.draw(traj.evalAt(traj.ts(end)));
       end
       
-      function playback(traj, trailerTraces, axisBnds, permanenceInterval, cleanWhenDone)
+      function playback(traj, trailerTraces, axisBnds, permanenceInterval, cleanWhenDone, ff)
           if(nargin<2)
             trailerTraces = [];
           end
@@ -77,6 +77,10 @@ classdef Trajectory < TimedVector
               cleanWhenDone = 0;
           end
           
+          if(nargin<6)
+            ff=1;
+          end
+          
           tracesX = nan(length(trailerTraces), length(traj.ts));
           tracesY = nan(length(trailerTraces), length(traj.ts));
           
@@ -85,7 +89,8 @@ classdef Trajectory < TimedVector
           h_car = 0; 
           h_traces = 0;
           hold on
-          for t=traj.ts
+          tsd = traj.ts(1:ff:end);
+          for t=tsd
             t0=tic;
             x = traj.evalAt(t);
 
@@ -119,7 +124,7 @@ classdef Trajectory < TimedVector
             end
             
             
-            pause(t-last_t-toc(t0));
+            pause((t-last_t-toc(t0))/ff);
             drawnow;
             last_t = t;
             ti=ti+1;

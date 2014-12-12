@@ -3,7 +3,7 @@
 %  - 0 to only visualize the solution after plnning is finished
 %  - 1 to visualize the tree as it is built
 %  - 2 to animate the whole planning procedure (takes long time)
-vizMode = 0;
+vizMode = 2;
 NumIterations = 100; % Number of iterations when the algorithm should be stopped
 
 %% Create Car Object (skipped if C is already available on the workspace)

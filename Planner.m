@@ -90,7 +90,7 @@ classdef Planner
 
         ok = obj.isCollisionFree(traj);
         if(vizMode==2)
-            traj.playback(1:(obj.car.N+1), obj.world.span, [], ~ok);
+            traj.playback(1:(obj.car.N+1), obj.world.span, [], ~ok, 40);
         end
         if(ok) 
             if(vizMode==1)
